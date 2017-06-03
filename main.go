@@ -79,6 +79,15 @@ func main() {
 			}
 		})
 	}
+
+	// Обработчик для возврата 404 в формате JSON
+	router.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": "error",
+			"error":  http.StatusNotFound,
+		})
+	})
+
 	//
 	// Запуск в работу
 	//
