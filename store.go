@@ -22,6 +22,10 @@ func SaveStream(stream io.Reader) (string, error) {
 		if err == nil {
 			err = cerr
 		}
+		if err != nil {
+			// Удаляем поток в случае наличия любых ошибок
+			_ = DeleteStream(uustr)
+		}
 	}()
 	if _, err = io.Copy(out, stream); err != nil {
 		return "", err

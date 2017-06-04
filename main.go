@@ -68,8 +68,9 @@ func main() {
 			err := DeleteStream(id)
 			if err != nil {
 				c.JSON(http.StatusNotFound, gin.H{
-					"status": "error",
-					"error":  err,
+					"status":  "error",
+					"error":   err,
+					"message": err.Error(),
 				})
 			} else {
 				c.JSON(http.StatusOK, gin.H{
@@ -111,8 +112,9 @@ func ginSaveStream(c *gin.Context) {
 	id, err := SaveStream(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": "error",
-			"error":  err,
+			"status":  "error",
+			"error":   err,
+			"message": err.Error(),
 		})
 	} else {
 		c.JSON(http.StatusCreated, gin.H{
