@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,6 +15,7 @@ type Config struct {
 	addr    string
 	isDebug bool
 	dataDir string
+	ttl     time.Duration
 }
 
 var config Config
@@ -25,7 +27,15 @@ func main() {
 	flag.StringVar(&config.addr, "addr", "0.0.0.0:8080", "Service listennig address & port")
 	flag.StringVar(&config.dataDir, "path", "DATA", "Streams storage path")
 	flag.BoolVar(&config.isDebug, "d", false, "Debug mode")
+	ttlstr := flag.String("ttl", "1h", "Streams time-to-live on storage")
 	flag.Parse()
+
+	// Инициализация конфигурации
+	var err error
+	config.ttl, err = time.ParseDuration(*ttlstr)
+	if err != nil {
+		log.Fatalf("Ошибка разбора параметра ttl: %s", err.Error())
+	}
 
 	// Создание роутера
 	if config.isDebug {
@@ -79,6 +89,22 @@ func main() {
 				})
 			}
 		})
+
+		// Выполнить очистку (вручную)
+		v1.DELETE("/streams", func(c *gin.Context) {
+			err := Clean()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"status":  "error",
+					"error":   err,
+					"message": err.Error(),
+				})
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"status": "cleaned",
+				})
+			}
+		})
 	}
 
 	// Обработчик для возврата 404 в формате JSON
@@ -95,11 +121,12 @@ func main() {
 
 	// Печать конфигурации
 	log.Printf("Current config:\n")
-	log.Printf(" - Streams path:      %s\n", config.dataDir)
 	log.Printf(" - Listening address: %s\n", config.addr)
+	log.Printf(" - Streams path:      %s\n", config.dataDir)
+	log.Printf(" - Streams TTL:       %s\n", config.ttl.String())
 
 	// Cоздание пути хранения (если нужно)
-	err := os.MkdirAll(config.dataDir, os.ModePerm)
+	err = os.MkdirAll(config.dataDir, os.ModePerm)
 	if err != nil {
 		log.Fatalf("Fatal: error creating %s: %v", config.dataDir, err)
 	}

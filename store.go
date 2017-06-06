@@ -2,8 +2,13 @@ package main
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"time"
+
+	"log"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -61,4 +66,30 @@ func DeleteStream(id string) error {
 // GetStreamPath возвращает путь к потоку данных по его идентификатору
 func GetStreamPath(id string) string {
 	return filepath.Join(config.dataDir, id) + ".data"
+}
+
+// Clean очистка хранилища от устаревших данных
+func Clean() error {
+	files, err := ioutil.ReadDir(config.dataDir)
+	if err != nil {
+		log.Printf("TTL: Ошибка получения списка потоков хранилища: %s, очистка не выполнена\n", err.Error())
+		return err
+	}
+
+	// Прохождение по списку файлов и удаление устаревших
+	for _, file := range files {
+		timeToDie := file.ModTime().Add(config.ttl)
+		if timeToDie.Before(time.Now()) {
+			// Удаление устаревшего потока
+			path := filepath.Join(config.dataDir, file.Name())
+			err = os.Remove(path)
+			if err != nil {
+				// TODO: инцидент безопасности, пока игнорируем, но пишем в лог
+				log.Printf("TTL: Не удалось удалить поток: %s, время создания: %s, ошибка %s\n", path, file.ModTime().String(), err.Error())
+			} else {
+				log.Printf("TTL: Поток %s удален\n", path)
+			}
+		}
+	}
+	return nil
 }
