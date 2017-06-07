@@ -93,3 +93,13 @@ func Clean() error {
 	}
 	return nil
 }
+
+// CleanProc бесконечно выполняет очистку 1 раз в минуту
+// Завершается вместе с процессом
+func CleanProc() {
+	log.Printf("TTL: запуск цикла автоочистки устаревших данных, период %s\n", config.ttlCycle.String())
+	for {
+		Clean()
+		time.Sleep(config.ttlCycle)
+	}
+}

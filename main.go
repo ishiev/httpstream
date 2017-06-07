@@ -12,10 +12,11 @@ import (
 
 // Config конфигурация сервиса
 type Config struct {
-	addr    string
-	isDebug bool
-	dataDir string
-	ttl     time.Duration
+	addr     string
+	isDebug  bool
+	dataDir  string
+	ttl      time.Duration
+	ttlCycle time.Duration
 }
 
 var config Config
@@ -27,15 +28,9 @@ func main() {
 	flag.StringVar(&config.addr, "addr", "0.0.0.0:8080", "Service listennig address & port")
 	flag.StringVar(&config.dataDir, "path", "DATA", "Streams storage path")
 	flag.BoolVar(&config.isDebug, "d", false, "Debug mode")
-	ttlstr := flag.String("ttl", "1h", "Streams time-to-live on storage")
+	flag.DurationVar(&config.ttl, "ttl", 1*time.Hour, "Streams time-to-live on storage")
+	flag.DurationVar(&config.ttlCycle, "ttlcycle", 1*time.Minute, "Time-to-live cleaner cycle interval")
 	flag.Parse()
-
-	// Инициализация конфигурации
-	var err error
-	config.ttl, err = time.ParseDuration(*ttlstr)
-	if err != nil {
-		log.Fatalf("Ошибка разбора параметра ttl: %s", err.Error())
-	}
 
 	// Создание роутера
 	if config.isDebug {
@@ -124,12 +119,17 @@ func main() {
 	log.Printf(" - Listening address: %s\n", config.addr)
 	log.Printf(" - Streams path:      %s\n", config.dataDir)
 	log.Printf(" - Streams TTL:       %s\n", config.ttl.String())
+	log.Printf(" - Cleaner interval:  %s\n", config.ttlCycle.String())
 
 	// Cоздание пути хранения (если нужно)
-	err = os.MkdirAll(config.dataDir, os.ModePerm)
+	err := os.MkdirAll(config.dataDir, os.ModePerm)
 	if err != nil {
-		log.Fatalf("Fatal: error creating %s: %v", config.dataDir, err)
+		log.Fatalf("Fatal: error creating %s: %s", config.dataDir, err.Error())
 	}
+
+	// Запуск автоочистки
+	go CleanProc()
+
 	// Запуск сервера
 	log.Fatal(router.Run(config.addr))
 }
