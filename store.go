@@ -1,3 +1,7 @@
+// Copyright 2017 Nikolay Ishiev.  All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package main
 
 import (
@@ -39,24 +43,6 @@ func SaveStream(stream io.Reader) (string, error) {
 
 	return uustr, err
 }
-
-// GetStream открывает и копирует сохраненный поток. Возвращает nil или ошибку
-/*
-func GetStream(out io.Writer, id string) error {
-	in, err := os.Open(id)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		cerr := in.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-	_, err = io.Copy(out, in)
-	return err
-}
-*/
 
 // DeleteStream удаляет поток
 func DeleteStream(id string) error {
